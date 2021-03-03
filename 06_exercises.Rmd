@@ -79,23 +79,76 @@ Once your repository is created, you should always open your **project** rather 
 
   2. Read in the fake garden harvest data. Find the data [here](https://github.com/llendway/scraping_etc/blob/main/2020_harvest.csv) and click on the `Raw` button to get a direct link to the data. 
   
+```{r}
+gardenharvest <- read_csv("2020_harvest.csv")
+```
+  
+  
   3. Read in this [data](https://www.kaggle.com/heeraldedhia/groceries-dataset) from the kaggle website. You will need to download the data first. Save it to your project/repo folder. Do some quick checks of the data to assure it has been read in appropriately.
+
+```{r}
+groceries <- read_csv("Groceries_dataset.csv")
+```
+
+```{r}
+groceries %>% 
+  mutate(across(where(is.character), as.factor)) %>% 
+  summary()
+```
+
 
   4. CHALLENGE(not graded): Write code to replicate the table shown below (open the .html file to see it) created from the `garden_harvest` data as best as you can. When you get to coloring the cells, I used the following line of code for the `colors` argument:
   
-```{r, eval=FALSE}
-colors = scales::col_numeric(
-      palette = paletteer::paletteer_d(
-        palette = "RColorBrewer::YlGn"
-      ) %>% as.character()
-```
 
-![](garden_table.html){width=600, height=1000}
+
 
 
   5. Create a table using `gt` with data from your project or from the `garden_harvest` data if your project data aren't ready.
   
+```{r}
+# Define the start and end dates for the data range
+start_date <- "2020-06-06"
+end_date <- "2020-10-18"
+
+# Create a gt table based on preprocessed
+
+garden_harvest %>%
+  dplyr::filter(date >= start_date & date <= end_date) %>%
+  gt() %>%
+  tab_header(
+    title = "GARDEN HARVEST",
+    subtitle = glue::glue("{start_date} to {end_date}")
+  ) %>%
+  fmt_number(
+    columns = vars(weight),
+    suffixing = TRUE
+  )
+```
+  
+  
   6. Use `patchwork` operators and functions to combine at least two graphs using your project data or `garden_harvest` data if your project data aren't read.
+  
+```{r}
+  p1 <- garden_harvest %>% 
+  filter(vegetable == "tomatoes") %>% 
+  group_by(date, variety) %>% 
+  summarize(daily_harvest_lb = sum(weight)*0.00220462) %>% 
+  ungroup() %>% 
+  complete(variety, date, fill = list(daily_harvest_lb = 0)) %>%
+  mutate(cum_harvest = cumsum(daily_harvest_lb))%>%
+  ggplot(aes(x = date, y = cum_harvest, fill = fct_reorder(variety, cum_harvest))) +
+  geom_area()+
+  labs(y = "Total Harvest in Pounds", x = "Date")+
+  scale_fill_discrete(name = "variety")
+
+  p2 <- ggplot(garden_harvest, aes(y = vegetable, x = weight)) + # Use the ggplot function. Set the x axis as weights of the vegetables, and the y axis as different kinds of vegetables
+  geom_boxplot()
+  
+  p1+p2
+```
+
+
+  
   
 
 **DID YOU REMEMBER TO UNCOMMENT THE OPTIONS AT THE TOP?**
